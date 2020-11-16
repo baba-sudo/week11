@@ -1,0 +1,354 @@
+
+import xlrd                 # 导入xlrd包，对Excel读取数据
+import random               # 导入随机random模块
+import pymysql              # 导入pymysql包，对mysql数据库进行连接
+from tkinter import *
+from tkinter import messagebox
+
+
+class DianMing():
+    # 定义函数：从Excel文件读取学号和姓名，返回全体学号和姓名列表
+    def student(self, address):
+        data = xlrd.open_workbook(address)
+        table = data.sheet_by_name('Sheet1')  # 选定页码1--(Sheet1)
+
+        rowNum = table.nrows  # 总行数
+        colNum = table.ncols  # 总列数
+        a = []  # 获得学号
+        b = []  # 获得姓名
+
+        for y in range(colNum):  # 自动索引学号(xuehao),姓名(name)
+            if table.cell_value(0, y) == 'xuehao':
+                for x in range(1, rowNum):
+                    vaule = table.cell_value(x, y)
+                    vaule = float(vaule)
+                    vaule = int(vaule)
+                    a.append(vaule)
+            if table.cell_value(0, y) == 'name':
+                for x in range(1, rowNum):
+                    vaule = table.cell_value(x, y)
+                    b.append(vaule)
+        return a, b
+
+    # 定义函数：传入全班人数,输入想要点名人数
+    def num(self, length):
+        while True:
+            s = input()
+            if s.isdigit():  # 判断输入是否为数字,是（true）,否（Flase）
+                num = eval(s)
+                if (0 <= num <= length):
+                    return num
+                else:
+                    print('超出人数(全班人数:{0})！请再次输入:'.format(length), end='')
+                    continue
+            else:
+                print('请规范输入！再次输入点名人数(全班人数:{0}):'.format(length), end='')
+                continue
+
+
+
+# 定义函数：输入列表学号，姓名，人数，进行随机点名,返回随机学号，姓名列表
+    def dianming(self, a, b, num):
+        students = dict(zip(a, b))  # 化为字典,便于后面查询
+        d = []
+        e = []
+        c = random.sample(a, num)  # 从学号列表中随机抽取不同的元素
+        for i in c:
+            d.append(i)
+            e.append(students[i])
+        return d, e
+
+
+# 定义函数：输入列表学号,姓名,判断是否来了,返回点名期间早退和没来学号，姓名列表
+    def panduan1(self, a, b):
+        students = dict(zip(a, b))  # 化为字典,便于后面查询
+        c = []
+        d = []
+        f = []
+        g = []
+        for xuehao in a:
+            print('学号为{0}的学生是否来了（来：1，没来：2）：'.format(xuehao), end='')
+            while True:
+                x = input()
+                if (x == '1'):
+                    c.append(xuehao)
+                    d.append(students[xuehao])
+                    break
+                elif (x == '2'):
+                    f.append(xuehao)
+                    g.append(students[xuehao])
+                    break
+                elif (x != '1' or x != '2'):
+                    print('请规范输入！再次输入:', end='')
+                    continue
+        x = self.zaotui(c, d)
+        y = x[0]
+        z = x[1]
+        return y, z, f, g
+
+
+# 定义函数：输入列表学号,姓名,判断是否早退,返回早退学号，姓名列表
+    def zaotui(self, a, b):
+        students = dict(zip(a, b))  # 化为字典,便于后面查询
+        c = []
+        d = []
+        for xuehao in a:
+            print('学号为{0}的学生是否早退（是：1，否：2）：'.format(xuehao), end='')
+            while True:
+                x = input()
+                if (x == '1'):
+                    c.append(xuehao)
+                    d.append(students[xuehao])
+                    break
+                elif (x == '2'):
+                    break
+                elif (x != '1' or x != '2'):
+                    print('请规范输入！再次输入:', end='')
+                    continue
+        return c, d
+
+
+# 定义函数：输入点名期间没来列表学号,创建请假表,迟到表,缺勤表,返回点名期间没来并且早退学号，姓名列表
+    def qingjia(self, a, b):
+        students = dict(zip(a, b))  # 化为字典,便于后面查询
+        c = []
+        d = []
+        f = []
+        g = []
+        for xuehao in a:
+            print('学号为{0}的学生是否有请假条（有：1，没有：2）：'.format(xuehao), end='')
+            while True:
+                x = input()
+                if (x == '1'):
+                    c.append(xuehao)
+                    d.append(students[xuehao])
+                    break
+                elif (x == '2'):
+                    f.append(xuehao)
+                    g.append(students[xuehao])
+                    break
+                elif (x != '1' or x != '2'):
+                    print('请规范输入！再次输入:', end='')
+                    continue
+        qingjia1 = 'insert into qingjia(xuehao,name) values(%s,%s)'
+        self.data(c, d, qingjia1)
+        print('请假表数据填写完成')
+        x = self.panduan2(f, g)
+        y = x[0]
+        z = x[1]
+        return y, z
+
+
+# 定义函数：输入点名期间没有请假条列表学号,姓名,创建缺勤和迟到名单,返回早退学号列表
+    def panduan2(self, a, b):
+        students = dict(zip(a, b))  # 化为字典,便于后面查询
+        c = []
+        d = []
+        f = []
+        g = []
+        j = []
+        k = []
+        for xuehao in a:
+            print('学号为{0}的学生上课期间是否来了（是：1，否：2）：'.format(xuehao), end='')
+            while True:
+                x = input()
+                if (x == '1'):
+                    c.append(xuehao)
+                    d.append(students[xuehao])
+                    break
+                elif (x == '2'):
+                    f.append(xuehao)
+                    g.append(students[xuehao])
+                    break
+                elif (x != '1' or x != '2'):
+                    print('请规范输入！再次输入:', end='')
+                    continue
+        chidao1 = 'insert into chidao(xuehao,name) values(%s,%s)'
+        self.data(c, d, chidao1)
+        print('迟到表数据填写完成')
+        queqin1 = 'insert into queqin(xuehao,name) values(%s,%s)'
+        self.data(f, g, queqin1)
+        print('缺勤表数据填写完成')
+        x = self.zaotui(c, d)
+        y = x[0]
+        z = x[1]
+        return y, z
+
+
+# 定义函数：输入列表学号,姓名,sql语句(insert);为了向空表里插入数据
+    def data(self, a, b, sql_table):
+        c = dict(zip(a, b))
+        d = c.items()
+        for i in d:
+            try:
+            # 如果断开，会触发重新连接
+                con.ping(reconnect=True)
+            # 执行插入数据
+                cur.execute(sql_table, i)
+            # 提交事务
+                con.commit()
+            except Exception as e:
+                print(e)
+                con.rollback()
+                print('插入数据失败')
+        return c
+
+
+class pick(Frame):
+    def __init__(self, master=None):
+        super().__init__(master)
+        self.master = master
+        self.pack()
+        self.createWidget()
+
+    # 创建组件
+    def createWidget(self):
+        self.v = StringVar()
+        self.v.set('数应19')
+        self.r1 = Radiobutton(self, text='数应19', value='数应19', variable=self.v)
+
+        self.r1.grid(row=0, column=0)
+
+        self.v1 = StringVar()
+        self.v1.set('Python课')
+        self.r3 = Radiobutton(self, text='Python课', value='Python课', variable=self.v1)
+        self.r4 = Radiobutton(self, text='java课', value='java课', variable=self.v1)
+        self.r3.grid(row=1, column=0)
+        self.r4.grid(row=1, column=1)
+        Button(self, text='确定', command=self.pick1) \
+            .grid(row=2, column=0, columnspan=2, pady=10, sticky=NSEW)
+
+    # 选择班级事件
+    def pick1(self):
+        global address
+        address = self.v.get()
+        messagebox.showinfo('提示', '选择的班级：' + self.v.get() \
+                            + '\n' + '选择的班级：' + self.v1.get())
+        root2.destroy()
+
+    # 主函数
+
+
+if __name__ == '__main__':
+    global user
+    user = ['']
+    global pwd
+    pwd = ['']
+    # 连接数据库，创建空白表
+    try:
+        # 创建连接数据库
+        con = pymysql.connect(host='localhost', user='root', password='root', database='my01', port=3306)
+        # 创建游标对象
+        cur = con.cursor()
+        # 编写创建表
+        qingjia_table = """
+                create table qingjia(
+                xuehao int not null,
+                name varchar(20) not null,
+                primary key(xuehao)
+                )
+            """
+        queqin_table = """
+                create table queqin(
+                xuehao int not null,
+                name varchar(20) not null,
+                primary key(xuehao)
+                )
+            """
+        chidao_table = """
+                create table chidao(
+                xuehao int not null,
+                name varchar(20) not null,
+                primary key(xuehao)
+                )
+            """
+        zaotui_table = """
+                create table zaotui(
+                xuehao int not null,
+                name varchar(20) not null,
+                primary key(xuehao)
+                )
+            """
+        user_pwd_table = """
+                            create table user_pwd(
+                            account varchar(20) not null,
+                            password varchar(20) not null,
+                            primary key(account)
+                            )
+                        """
+
+        sy_19_table = """
+                        create table sy_19(
+                        xuehao int not null,
+                        name varchar(20) not null,
+                        primary key(xuehao)
+                        )
+                    """
+        # 执行创建表
+
+        cur.execute(sy_19_table)
+        cur.execute(user_pwd_table)
+        cur.execute(qingjia_table)
+        cur.execute(queqin_table)
+        cur.execute(chidao_table)
+        cur.execute(zaotui_table)
+        print('所有空表创建成功')
+
+        # 创建选班，选课界面
+        print('进入选班，选课界面')
+        root2 = Tk()
+        root2.geometry('300x100+520+320')
+        root2.title('选择系统')
+        tabl2 = pick(master=root2)
+        root2.mainloop()
+
+
+        if address == '数应19':
+            address = r'C:\Users\25077\Desktop\数应191身份证.xlsx'
+
+        # 开始点名
+        print('开始点名')
+        app = DianMing()
+        # 将信息传入数据库
+        ad1 = r'C:\Users\25077\Desktop\数应191身份证.xlsx'
+
+        sql_table1 = app.student(ad1)
+        a1 = sql_table1[0];
+        b1 = sql_table1[1]
+        sy_19_sql = 'insert into sy_19(xuehao,name) values(%s,%s)'
+        app.data(a1, b1, sy_19_sql)
+
+        # 获取全班信息
+        x = app.student(address)
+        a = x[0];
+        b = x[1]
+        length = len(a)
+        # 确定要点名的人数
+        print('请输入要点名的人数(全班人数:{0})：'.format(len(a)), end='')
+        num1 = app.num(length)
+        # 确定随机点名名单
+        x = app.dianming(a, b, num1)
+        c = x[0];
+        d = x[1]
+        # 上课前的第一次点名
+        x = app.panduan1(c, d)
+        e = x[0];
+        f = x[1]  # 早退1
+        g = x[2];
+        h = x[3]  # 没来
+        x = app.qingjia(g, h)
+        i = x[0];
+        j = x[1]  # 早退2
+        k = e + i  # 总早退
+        l = f + j
+        zaotui1 = 'insert into zaotui(xuehao,name) values(%s,%s)'
+        app.data(k, l, zaotui1)
+        print('早退表数据填写完成')
+    except Exception as e:
+        print(e)
+        print('运行失败！！')
+    finally:
+        # 提交事务
+        con.commit()
+        # 关闭连接
+        con.close()
