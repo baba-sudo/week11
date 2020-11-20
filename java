@@ -11,4 +11,16 @@ public class Test {
 	}
   
   
-  
+package class1;
+import java.util.Scanner;
+public class Test {
+	public static void main(String[] args){
+		int n ;
+		int a,b,c,d;
+		Scanner input = new Scanner(System.in);
+		System.out.println("请输入三位数：");
+		n=input.nextInt();
+		a=n/100; b=n/10%10; c=n%10; d=c*100+b*10+a; 
+		System.out.println(d);
+		}
+	}
